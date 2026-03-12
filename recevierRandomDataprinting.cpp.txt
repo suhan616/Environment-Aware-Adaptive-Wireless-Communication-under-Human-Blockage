@@ -1,0 +1,81 @@
+#include <esp_now.h>
+#include <WiFi.h>
+
+// ================= STRUCTURE (MUST MATCH SENDER) =================
+typedef struct struct_message {
+  char name[32];
+  int32_t number;
+  float value;
+  bool flag;
+  uint32_t timestamp;
+} struct_message;
+
+struct_message receivedData;
+
+// ================= RECEIVE CALLBACK =================
+void OnDataRecv(const esp_now_recv_info_t *info,
+                const uint8_t *incomingData,
+                int len) {
+
+  memcpy(&receivedData, incomingData, sizeof(receivedData));
+
+  Serial.println("===== Packet Received =====");
+
+  Serial.print("From MAC: ");
+  for (int i = 0; i < 6; i++) {
+    Serial.print(info->src_addr[i], HEX);
+    if (i < 5) Serial.print(":");
+  }
+  Serial.println();
+
+  Serial.print("Name: ");
+  Serial.println(receivedData.name);
+
+  Serial.print("Number: ");
+  Serial.println(receivedData.number);
+
+  Serial.print("Value: ");
+  Serial.println(receivedData.value);
+
+  Serial.print("Flag: ");
+  Serial.println(receivedData.flag);
+
+  Serial.print("Timestamp (sender millis): ");
+  Serial.println(receivedData.timestamp);
+
+  // Calculate approximate transmission delay
+  uint32_t currentMillis = millis();
+  uint32_t delayTime = currentMillis - receivedData.timestamp;
+
+  Serial.print("Approx Transmission Delay (ms): ");
+  Serial.println(delayTime);
+
+  Serial.println("============================\n");
+}
+
+// ================= SETUP =================
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  WiFi.mode(WIFI_STA);
+
+  Serial.print("Receiver MAC Address: ");
+  Serial.println(WiFi.macAddress());
+
+  // Initialize ESP-NOW
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+
+  // Register receive callback
+  esp_now_register_recv_cb(OnDataRecv);
+
+  Serial.println("ESP-NOW Receiver Ready");
+}
+
+// ================= LOOP =================
+void loop() {
+  // Nothing required here
+}
