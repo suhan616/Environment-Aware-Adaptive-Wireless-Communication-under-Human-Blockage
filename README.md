@@ -2,6 +2,64 @@
 MINI PROJECT on Environment-Aware Adaptive Wireless Communication under Human Blockage
 Environment-Aware Adaptive Wireless Communication under Human Blockage
 
+/*
+  ESP-NOW Demo - Receive
+  Reads data from Initiator
+*/
+
+// Include Libraries
+#include <esp_now.h>
+#include <WiFi.h>
+
+// Define a data structure
+typedef struct struct_message {
+  char a[32];
+  int b;
+  float c;
+  bool d;
+} struct_message;
+
+// Create a structured object
+struct_message myData;
+
+
+// Callback function executed when data is received
+void OnDataRecv(const esp_now_recv_info_t *esp_now_info,
+                const uint8_t *incomingData,
+                int len) {
+
+  int rssi = esp_now_info->rx_ctrl->rssi;
+
+  Serial.print("RSSI: ");
+  Serial.print(rssi);
+  Serial.println(" dBm");
+
+  memcpy(&myData, incomingData, sizeof(myData));
+}
+
+
+void setup() {
+  // Set up Serial Monitor
+  Serial.begin(115200);
+  
+  // Set ESP32 as a Wi-Fi Station
+  WiFi.mode(WIFI_STA);
+
+  // Initilize ESP-NOW
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+  
+  // Register callback function
+  esp_now_register_recv_cb(OnDataRecv);
+}
+ 
+void loop() {
+
+}
+
+
 📌 Project Overview
 
 This project aims to develop an environment-aware adaptive wireless communication system. Traditional IoT and wireless setups often suffer from dropped packets or wasted energy due to unexpected environmental changes. Specifically, our research focuses on analyzing and mitigating the effects of human blockage on signal integrity.
