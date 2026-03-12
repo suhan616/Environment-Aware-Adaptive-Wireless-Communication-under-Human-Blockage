@@ -1,0 +1,64 @@
+/*
+  ESP-NOW Receiver
+  With Adjustable TX Power
+*/
+
+#include <esp_now.h>
+#include <WiFi.h>
+
+// ---------- RSSI Settings ----------
+#define WINDOW_SIZE 20
+
+int currentRSSI = 0;
+float smoothRSSI = 0;
+
+int rssiWindow[WINDOW_SIZE];
+int windowIndex = 0;
+int sampleCount = 0;
+long windowSum = 0;
+
+void OnDataRecv(const esp_now_recv_info_t *esp_now_info,
+                const uint8_t *incomingData,
+                int len) {
+
+  currentRSSI = esp_now_info->rx_ctrl->rssi;
+
+  // Sliding window update
+  windowSum -= rssiWindow[windowIndex];
+  rssiWindow[windowIndex] = currentRSSI;
+  windowSum += currentRSSI;
+
+  windowIndex++;
+  if (windowIndex >= WINDOW_SIZE)
+    windowIndex = 0;
+
+  if (sampleCount < WINDOW_SIZE)
+    sampleCount++;
+
+  smoothRSSI = (float)windowSum / sampleCount;
+
+  Serial.println(smoothRSSI);
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  WiFi.mode(WIFI_STA);
+
+  //  Set Transmission Power Here
+  WiFi.setTxPower(WIFI_POWER_19_5dBm);   // Max power
+  // Try also:
+  // WIFI_POWER_15dBm
+  // WIFI_POWER_8_5dBm
+  // WIFI_POWER_2dBm
+
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("ESP-NOW Init Failed");
+    return;
+  }
+
+  esp_now_register_recv_cb(OnDataRecv);
+}
+
+void loop() {
+}
